@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Pago con Kushki</title>
+    <script src="https://cdn.kushkipagos.com/kushki.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        label {
+            margin-top: 10px;
+            display: block;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pago con Tarjeta de Crédito</h1>
+    <form id="payment-form">
+        <label for="cardNumber">Número de tarjeta:</label>
+        <input type="text" id="cardNumber" required>
+
+        <label for="expiration">Fecha de expiración (MM/AA):</label>
+        <input type="text" id="expiration" required>
+
+        <label for="cvv">CVV:</label>
+        <input type="text" id="cvv" required>
+
+        <button type="submit">Pagar</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        // Inicializar Kushki
+        const kushki = new Kushki({
+            merchantId: '20000000100799492000', // Merchant ID
+            publicKey: 'a612670532f5403c95fa64423e9c48de' // Public Key
+        });
+
+        document.getElementById('payment-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const cardData = {
+                number: document.getElementById('cardNumber').value,
+                expiration: document.getElementById('expiration').value,
+                cvv: document.getElementById('cvv').value
+            };
+
+            try {
+                // Solicitar el token de la tarjeta
+                const tokenResponse = await kushki.createToken(cardData);
+                const token = tokenResponse.token;
+
+                // Realizar el cargo
+                const chargeResponse = await fetch('https://api.kushkipagos.com/charges', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer a19915677e2646af82f4ae95b41e6e1c' // Private Key
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        amount: 10000, // Monto en centavos (ej. 100.00 COP = 10000)
+                        currency: 'COP',
+                        description: 'Pago de prueba'
+                    })
+                });
+
+                const result = await chargeResponse.json();
+                document.getElementById('result').innerText = result.status === 'SUCCESS' ? 'Pago aprobado' : 'Pago declinado';
+            } catch (error) {
+                console.error('Error en el proceso de pago:', error);
+                document.getElementById('result').innerText = 'Error en el proceso de pago';
+            }
+        });
+    </script>
+</body>
+</html>
